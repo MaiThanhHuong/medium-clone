@@ -1,15 +1,16 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { RegisterDto } from './dto/auth.dto';
+import { RegisterDto } from './dto/register.dto';
 import { User } from '@prisma/client';
 import { hash, compare } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prismaService: PrismaService,
-    private jwtService: JwtService, // Assuming JwtService is imported and used for token generation
+    private jwtService: JwtService,
   ) {}
 
   async register(userData: RegisterDto): Promise<User> {
@@ -33,7 +34,7 @@ export class AuthService {
     return res;
   }
 
-  async login(userData: { email: string; password: string }): Promise<any> {
+  async login(userData: LoginDto): Promise<any> {
     // Check if user exists
     const user = await this.prismaService.user.findUnique({
       where: {
@@ -54,7 +55,7 @@ export class AuthService {
         HttpStatus.UNAUTHORIZED,
       );
     }
-    // Generate access token (if needed, not implemented here)
+
     const payload = { id: user.id, email: user.email };
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: process.env.ACCESS_TOKEN_KEY,
@@ -65,6 +66,8 @@ export class AuthService {
       secret: process.env.REFRESH_TOKEN_KEY,
       expiresIn: '7d',
     });
-    return { accessToken, refreshToken };
+
+    const { password, ...userInfo } = user;
+    return { user: userInfo, accessToken, refreshToken };
   }
 }
