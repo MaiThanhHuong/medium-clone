@@ -14,7 +14,6 @@ export class AuthService {
   ) {}
 
   async register(userData: RegisterDto): Promise<User> {
-    // Check if user already exists
     const user = await this.prismaService.user.findUnique({
       where: {
         email: userData.email,
@@ -35,7 +34,6 @@ export class AuthService {
   }
 
   async login(userData: LoginDto): Promise<any> {
-    // Check if user exists
     const user = await this.prismaService.user.findUnique({
       where: {
         email: userData.email,
@@ -47,7 +45,6 @@ export class AuthService {
         HttpStatus.UNAUTHORIZED,
       );
     }
-    // Check if password is correct
     const isPasswordValid = await compare(userData.password, user.password);
     if (!isPasswordValid) {
       throw new HttpException(
