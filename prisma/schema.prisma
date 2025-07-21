@@ -16,10 +16,39 @@ datasource db {
 model User {
   id        Int   @id @default(autoincrement())
   email     String   @unique
-  name      String
+  username  String   @unique
   password  String
   bio       String?
   image     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  articles  Article[]
+  favoritedArticles Article[] @relation("FavoritedArticles")
+
+  followers User[] @relation("UserFollows")
+  following User[] @relation("UserFollows")
+}
+
+model Article {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  description String
+  body        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int
+
+  tags      Tag[]
+  favoritedBy User[] @relation("FavoritedArticles")
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+
+  articles Article[]
 }
