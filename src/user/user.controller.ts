@@ -17,7 +17,7 @@ export class UsersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Patch('user')
-  updateUser(
+  update(
     @GetUser('id') userId: number,
     @Body('user') updateUserDto: UpdateUserDto,
   ) {
