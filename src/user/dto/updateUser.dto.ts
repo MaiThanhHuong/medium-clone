@@ -9,17 +9,17 @@ import {
 } from 'class-validator';
 
 export class UpdateUserDto {
-  @IsEmail({}, { message: 'Email must be a valid email address.' })
   @IsOptional()
+  @IsEmail({}, { message: 'Email must be a valid email address.' })
   email?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   username?: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long.' })
-  @IsOptional()
   password?: string;
 
   @ValidateIf((o) => o.password !== undefined && o.password !== '')
@@ -29,11 +29,11 @@ export class UpdateUserDto {
   @Matches(/password/, { message: 'Passwords do not match.' })
   passwordConfirmation?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   bio?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   image?: string;
 }
