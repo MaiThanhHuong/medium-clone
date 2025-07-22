@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import { User } from '@prisma/client';
 
@@ -16,9 +20,8 @@ export class ProfilesService {
     }
 
     let following = false;
-    // Nếu có người dùng đang đăng nhập, kiểm tra xem họ có follow profile này không
     if (currentUser) {
-      const followRelation = await this.prisma.user.findFirst({
+      const followCount = await this.prisma.user.count({
         where: {
           id: currentUser.id,
           following: {
@@ -28,9 +31,7 @@ export class ProfilesService {
           },
         },
       });
-      if (followRelation) {
-        following = true;
-      }
+      following = followCount > 0;
     }
 
     return this.buildProfileResponse(userToFind, following);
@@ -38,7 +39,7 @@ export class ProfilesService {
 
   async followUser(currentUser: User, usernameToFollow: string) {
     if (currentUser.username === usernameToFollow) {
-      throw new NotFoundException('Cannot follow yourself');
+      throw new BadRequestException('Cannot follow yourself');
     }
 
     const userToFollow = await this.prisma.user.findUnique({
@@ -47,6 +48,17 @@ export class ProfilesService {
 
     if (!userToFollow) {
       throw new NotFoundException('User to follow not found');
+    }
+
+    const isAlreadyFollowing = await this.prisma.user.count({
+      where: {
+        id: currentUser.id,
+        following: { some: { id: userToFollow.id } },
+      },
+    });
+
+    if (isAlreadyFollowing) {
+      throw new BadRequestException('You are already following this user');
     }
 
     await this.prisma.user.update({
@@ -64,12 +76,27 @@ export class ProfilesService {
   }
 
   async unfollowUser(currentUser: User, usernameToUnfollow: string) {
+    if (currentUser.username === usernameToUnfollow) {
+      throw new BadRequestException('Cannot unfollow yourself');
+    }
+
     const userToUnfollow = await this.prisma.user.findUnique({
       where: { username: usernameToUnfollow },
     });
 
     if (!userToUnfollow) {
       throw new NotFoundException('User to unfollow not found');
+    }
+
+    const isFollowing = await this.prisma.user.count({
+      where: {
+        id: currentUser.id,
+        following: { some: { id: userToUnfollow.id } },
+      },
+    });
+
+    if (!isFollowing) {
+      throw new BadRequestException('You are not following this user');
     }
 
     await this.prisma.user.update({
