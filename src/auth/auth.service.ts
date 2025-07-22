@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from 'prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { User } from '@prisma/client';
 import { hash, compare } from 'bcrypt';
@@ -53,9 +53,9 @@ export class AuthService {
       );
     }
 
-    const payload = { id: user.id, email: user.email };
+    const payload = { sub: user.id, email: user.email };
     const accessToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.ACCESS_TOKEN_KEY,
+      secret: process.env.JWT_SECRET,
       expiresIn: '1h',
     });
 
