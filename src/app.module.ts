@@ -8,6 +8,8 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { I18nModule } from 'nestjs-i18n';
 import { i18nConfig } from './configs/i18n.config';
+import { ArticlesModule } from './articles/articles.module';
+
 @Module({
   imports: [
     I18nModule.forRoot(i18nConfig),
@@ -15,6 +17,7 @@ import { i18nConfig } from './configs/i18n.config';
     UserModule,
     PrismaModule,
     ProfilesModule,
+    ArticlesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
