@@ -5,8 +5,17 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
+import { ProfilesModule } from './profiles/profiles.module';
+import { I18nModule } from 'nestjs-i18n';
+import { i18nConfig } from './configs/i18n.config';
 @Module({
-  imports: [AuthModule, UserModule, PrismaModule],
+  imports: [
+    I18nModule.forRoot(i18nConfig),
+    AuthModule,
+    UserModule,
+    PrismaModule,
+    ProfilesModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
