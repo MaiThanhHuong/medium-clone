@@ -28,6 +28,8 @@ model User {
 
   followers User[] @relation("UserFollows")
   following User[] @relation("UserFollows")
+
+  comments Comment[]
 }
 
 model Article {
@@ -44,6 +46,8 @@ model Article {
 
   tags      Tag[]
   favoritedBy User[] @relation("FavoritedArticles")
+
+  comments Comment[]
 }
 
 model Tag {
@@ -51,4 +55,17 @@ model Tag {
   name  String @unique
 
   articles Article[]
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int
+
+  article   Article  @relation(fields: [articleId], references: [id])
+  articleId Int
 }
