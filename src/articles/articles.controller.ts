@@ -9,6 +9,8 @@ import {
   HttpStatus,
   HttpCode,
   Delete,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -28,7 +30,7 @@ import { I18n, I18nContext } from 'nestjs-i18n';
 @ApiTags('Articles')
 @Controller('api/articles')
 export class ArticlesController {
-  constructor(private readonly articlesService: ArticlesService) {}
+  constructor(private articlesService: ArticlesService) {}
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new article' })
@@ -43,19 +45,32 @@ export class ArticlesController {
       },
     },
   })
-  createArticle(
+  async createArticle(
     @GetUser('id') authorId: number,
     @Body('article') createArticleDto: CreateArticleDto,
   ) {
-    return this.articlesService.createArticle(authorId, createArticleDto);
+    const article = await this.articlesService.createArticle(
+      authorId,
+      createArticleDto,
+    );
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Article created successfully',
+      data: { article },
+    };
   }
 
   @ApiOperation({ summary: 'Get an article by slug' })
   @ApiResponse({ status: 200, description: 'Article successfully retrieved' })
   @ApiParam({ name: 'slug', description: 'Unique identifier of the article' })
   @Get(':slug')
-  getArticle(@Param('slug') slug: string, @I18n() i18n: I18nContext) {
-    return this.articlesService.getArticle(slug, i18n);
+  async getArticle(@Param('slug') slug: string, @I18n() i18n: I18nContext) {
+    const article = await this.articlesService.getArticle(slug, i18n);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Article retrieved successfully',
+      data: { article },
+    };
   }
 
   @ApiBearerAuth()
@@ -72,32 +87,41 @@ export class ArticlesController {
       },
     },
   })
-  updateArticle(
+  async updateArticle(
     @GetUser('id') authorId: number,
     @Param('slug') slug: string,
     @Body('article') updateArticleDto: UpdateArticleDto,
     @I18n() i18n: I18nContext,
   ) {
-    return this.articlesService.updateArticle(
+    const article = await this.articlesService.updateArticle(
       authorId,
       slug,
       updateArticleDto,
       i18n,
     );
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Article updated successfully',
+      data: { article },
+    };
   }
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete an article by slug' })
-  @ApiResponse({ status: 204, description: 'Article successfully deleted' })
+  @ApiResponse({ status: 200, description: 'Article successfully deleted' })
   @ApiParam({ name: 'slug', description: 'Unique identifier of the article' })
   @UseGuards(AuthGuard('jwt'))
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @Delete(':slug')
-  deleteArticle(
+  async deleteArticle(
     @GetUser('id') authorId: number,
     @Param('slug') slug: string,
     @I18n() i18n: I18nContext,
   ) {
-    return this.articlesService.deleteArticle(authorId, slug, i18n);
+    await this.articlesService.deleteArticle(authorId, slug, i18n);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Article deleted successfully',
+    };
   }
 }

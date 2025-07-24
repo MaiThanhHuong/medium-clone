@@ -10,6 +10,7 @@
   "article": {
     "notFound": "Article not found",
     "notFoundWithSlug": "Article with slug '{slug}' not found",
-    "notAuthor": "You are not the author of this article"
+    "notAuthor": "You are not the author of this article",
+    "deleted": "Article has been deleted successfully"
   }
 }

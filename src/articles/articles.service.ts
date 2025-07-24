@@ -9,6 +9,7 @@ import { UpdateArticleDto } from './dto/updateArticle.dto';
 import slugify from 'slugify';
 import { I18nContext } from 'nestjs-i18n';
 import { Article, Tag, User } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class ArticlesService {
@@ -18,9 +19,18 @@ export class ArticlesService {
     authorId: number,
     dto: CreateArticleDto,
   ): Promise<{ article: Article & { tags: Tag[]; author: User } }> {
-    const slug = slugify(dto.title, { lower: true, strict: true });
+    let baseSlug = slugify(dto.title, { lower: true, strict: true });
+    let slug = baseSlug;
 
-    const tagsToConnectOrCreate = dto.tagList?.map((tagName) => ({
+    const isExisted = await this.prisma.article.findUnique({ where: { slug } });
+    if (isExisted) {
+      const suffix = Math.random().toString(36).substring(2, 8);
+      slug = `${baseSlug}-${suffix}`;
+    }
+
+    const tagList = dto.tagList ?? [];
+
+    const tagsToConnectOrCreate = tagList.map((tagName) => ({
       where: { name: tagName },
       create: { name: tagName },
     }));
@@ -32,9 +42,12 @@ export class ArticlesService {
         description: dto.description,
         body: dto.body,
         authorId,
-        tags: {
-          connectOrCreate: tagsToConnectOrCreate,
-        },
+        tags:
+          tagList.length > 0
+            ? {
+                connectOrCreate: tagsToConnectOrCreate,
+              }
+            : undefined,
       },
       include: {
         author: true,
@@ -105,7 +118,7 @@ export class ArticlesService {
     authorId: number,
     slug: string,
     i18n: I18nContext,
-  ): Promise<void> {
+  ): Promise<{ message: string }> {
     const article = await this.prisma.article.findUnique({ where: { slug } });
 
     if (!article) {
@@ -126,5 +139,9 @@ export class ArticlesService {
     });
 
     await this.prisma.article.delete({ where: { slug } });
+
+    return {
+      message: await i18n.t('messages.article.deleted'),
+    };
   }
 }
