@@ -17,7 +17,7 @@ export class ProfilesService {
     });
 
     if (!userToFind) {
-      throw new NotFoundException(await i18n.t('errors.profileNotFound'));
+      throw new NotFoundException(await i18n.t('errors.profile.notFound'));
     }
 
     let following = false;
@@ -40,7 +40,9 @@ export class ProfilesService {
     i18n: I18nContext,
   ) {
     if (currentUser.username === usernameToFollow) {
-      throw new BadRequestException(await i18n.t('errors.cannotFollowSelf'));
+      throw new BadRequestException(
+        await i18n.t('errors.profile.cannotFollowSelf'),
+      );
     }
 
     const userToFollow = await this.prisma.user.findUnique({
@@ -48,7 +50,9 @@ export class ProfilesService {
     });
 
     if (!userToFollow) {
-      throw new NotFoundException(await i18n.t('errors.userToFollowNotFound'));
+      throw new NotFoundException(
+        await i18n.t('errors.profile.userToFollowNotFound'),
+      );
     }
 
     const isAlreadyFollowing = await this.prisma.user.count({
@@ -59,7 +63,9 @@ export class ProfilesService {
     });
 
     if (isAlreadyFollowing) {
-      throw new BadRequestException(await i18n.t('errors.alreadyFollowing'));
+      throw new BadRequestException(
+        await i18n.t('errors.profile.alreadyFollowing'),
+      );
     }
 
     await this.prisma.user.update({
@@ -76,7 +82,9 @@ export class ProfilesService {
     i18n: I18nContext,
   ) {
     if (currentUser.username === usernameToUnfollow) {
-      throw new BadRequestException(await i18n.t('errors.cannotFollowSelf'));
+      throw new BadRequestException(
+        await i18n.t('errors.profile.cannotFollowSelf'),
+      );
     }
 
     const userToUnfollow = await this.prisma.user.findUnique({
@@ -85,7 +93,7 @@ export class ProfilesService {
 
     if (!userToUnfollow) {
       throw new NotFoundException(
-        await i18n.t('errors.userToUnfollowNotFound'),
+        await i18n.t('errors.profile.userToUnfollowNotFound'),
       );
     }
 
@@ -97,7 +105,9 @@ export class ProfilesService {
     });
 
     if (!isFollowing) {
-      throw new BadRequestException(await i18n.t('errors.notFollowing'));
+      throw new BadRequestException(
+        await i18n.t('errors.profile.notFollowing'),
+      );
     }
 
     await this.prisma.user.update({

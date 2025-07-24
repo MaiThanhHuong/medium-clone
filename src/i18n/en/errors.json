@@ -1,8 +1,16 @@
 {
-  "profileNotFound": "Profile not found",
-  "userToFollowNotFound": "User to follow not found",
-  "userToUnfollowNotFound": "User to unfollow not found",
-  "cannotFollowSelf": "Cannot follow yourself",
-  "alreadyFollowing": "You are already following this user",
-  "notFollowing": "You are not following this user"
+  "profile": {
+    "notFound": "Profile not found",
+    "cannotFollowSelf": "Cannot follow yourself",
+    "alreadyFollowing": "You are already following this user",
+    "notFollowing": "You are not following this user",
+    "userToFollowNotFound": "User to follow not found",
+    "userToUnfollowNotFound": "User to unfollow not found"
+  },
+  "article": {
+    "notFound": "Article not found",
+    "notFoundWithSlug": "Article with slug '{slug}' not found",
+    "notAuthor": "You are not the author of this article",
+    "deleted": "Article has been deleted successfully"
+  }
 }
