@@ -8,8 +8,12 @@ import { CreateArticleDto } from './dto/createArticle.dto';
 import { UpdateArticleDto } from './dto/updateArticle.dto';
 import slugify from 'slugify';
 import { I18nContext } from 'nestjs-i18n';
-import { Article, Tag, User } from '@prisma/client';
-import { randomUUID } from 'crypto';
+import { Article, Tag, User, Comment } from '@prisma/client';
+import { CreateCommentDto } from './dto/createComment.dto';
+
+type CommentWithAuthor = Comment & {
+  author: Pick<User, 'username' | 'bio' | 'image'>;
+};
 
 @Injectable()
 export class ArticlesService {
@@ -143,5 +147,81 @@ export class ArticlesService {
     return {
       message: await i18n.t('messages.article.deleted'),
     };
+  }
+
+  async addComment(
+    authorId: number,
+    slug: string,
+    dto: CreateCommentDto,
+    i18n: I18nContext,
+  ): Promise<{ comment: CommentWithAuthor }> {
+    const article = await this.prisma.article.findUnique({ where: { slug } });
+
+    if (!article) {
+      throw new NotFoundException(await i18n.t('errors.article.notFound'));
+    }
+
+    const comment = await this.prisma.comment.create({
+      data: {
+        body: dto.body,
+        articleId: article.id,
+        authorId,
+      },
+      include: {
+        author: {
+          select: {
+            username: true,
+            bio: true,
+            image: true,
+          },
+        },
+      },
+    });
+
+    return { comment };
+  }
+
+  async getComments(slug: string): Promise<{ comments: CommentWithAuthor[] }> {
+    const comments = await this.prisma.comment.findMany({
+      where: {
+        article: {
+          slug,
+        },
+      },
+      include: {
+        author: {
+          select: {
+            username: true,
+            bio: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return { comments };
+  }
+
+  async deleteComment(
+    authorId: number,
+    commentId: number,
+    i18n: I18nContext,
+  ): Promise<void> {
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!comment) {
+      throw new NotFoundException(await i18n.t('errors.comment.notFound'));
+    }
+
+    if (comment.authorId !== authorId) {
+      throw new ForbiddenException(await i18n.t('errors.comment.notAuthor'));
+    }
+
+    await this.prisma.comment.delete({ where: { id: commentId } });
   }
 }
