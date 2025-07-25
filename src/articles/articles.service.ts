@@ -145,7 +145,7 @@ export class ArticlesService {
     await this.prisma.article.delete({ where: { slug } });
 
     return {
-      message: await i18n.t('errors.article.deleted'),
+      message: await i18n.t('messages.article.deleted'),
     };
   }
 
@@ -209,7 +209,7 @@ export class ArticlesService {
     authorId: number,
     commentId: number,
     i18n: I18nContext,
-  ): Promise<{ message: string }> {
+  ): Promise<void> {
     const comment = await this.prisma.comment.findUnique({
       where: { id: commentId },
     });
@@ -223,9 +223,5 @@ export class ArticlesService {
     }
 
     await this.prisma.comment.delete({ where: { id: commentId } });
-
-    return {
-      message: await i18n.t('errors.comment.deleted'),
-    };
   }
 }
