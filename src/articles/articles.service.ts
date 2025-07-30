@@ -321,9 +321,7 @@ export class ArticlesService {
     const tagList = article.tags.map((tag) => tag.name);
     const favoritesCount = article.favoritedBy.length;
 
-    const favorited = currentUser
-      ? article.favoritedBy.some((user) => user.id === currentUser.id)
-      : false;
+    const favorited = currentUser && article.favoritedBy.some((user) => user.id === currentUser.id);
 
     const authorFollowing = currentUser
       ? followingIds.includes(article.authorId)
