@@ -9,9 +9,8 @@ import {
   HttpStatus,
   HttpCode,
   Delete,
-  NotFoundException,
-  ForbiddenException,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -25,9 +24,14 @@ import {
   ApiParam,
   ApiResponse,
   ApiTags,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { I18n, I18nContext } from 'nestjs-i18n';
 import { CreateCommentDto } from './dto/createComment.dto';
+import { User } from '@prisma/client';
+import { QueryArticleDto } from './dto/queryArticle.dto';
+import { OptionalAuthGuard } from 'src/auth/guards/optional-auth.guard';
+import { stat } from 'fs';
 
 @ApiTags('Articles')
 @Controller('api/articles')
@@ -192,7 +196,39 @@ export class ArticlesController {
 
     return {
       statusCode: HttpStatus.NO_CONTENT,
-      message: 'Comment deleted successfully',
+    };
+  }
+
+  @ApiOperation({ summary: 'Get articles from followed users (feed)' })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
+  @Get('feed')
+  async getFeed(@GetUser() currentUser: User, @Query() query: QueryArticleDto) {
+    const feed = await this.articlesService.getFeed(currentUser, query);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Feed retrieved successfully',
+      data: feed,
+    };
+  }
+
+  @ApiOperation({ summary: 'List all articles with filters and pagination' })
+  @ApiQuery({ name: 'tag', required: false, type: String })
+  @ApiQuery({ name: 'author', required: false, type: String })
+  @ApiQuery({ name: 'favorited', required: false, type: String })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'offset', required: false, type: Number })
+  @UseGuards(OptionalAuthGuard)
+  @Get()
+  async getArticles(
+    @GetUser() currentUser: User,
+    @Query() query: QueryArticleDto,
+  ) {
+    const articles = await this.articlesService.getArticles(query, currentUser);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Articles retrieved successfully',
+      data: articles,
     };
   }
 }
