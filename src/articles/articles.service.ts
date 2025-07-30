@@ -323,9 +323,7 @@ export class ArticlesService {
 
     const favorited = currentUser && article.favoritedBy.some((user) => user.id === currentUser.id);
 
-    const authorFollowing = currentUser
-      ? followingIds.includes(article.authorId)
-      : false;
+    const authorFollowing = currentUser && followingIds.includes(article.authorId);
 
     const formattedArticle = {
       slug: article.slug,
