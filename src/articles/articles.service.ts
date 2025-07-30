@@ -8,8 +8,9 @@ import { CreateArticleDto } from './dto/createArticle.dto';
 import { UpdateArticleDto } from './dto/updateArticle.dto';
 import slugify from 'slugify';
 import { I18nContext } from 'nestjs-i18n';
-import { Article, Tag, User, Comment } from '@prisma/client';
+import { Article, Tag, User, Comment, Prisma } from '@prisma/client';
 import { CreateCommentDto } from './dto/createComment.dto';
+import { QueryArticleDto } from './dto/queryArticle.dto';
 
 type CommentWithAuthor = Comment & {
   author: Pick<User, 'username' | 'bio' | 'image'>;
@@ -223,5 +224,134 @@ export class ArticlesService {
     }
 
     await this.prisma.comment.delete({ where: { id: commentId } });
+  }
+
+  async getArticles(query: QueryArticleDto, currentUser?: User) {
+    const whereClause: Prisma.ArticleWhereInput = {};
+
+    if (query.tag) {
+      whereClause.tags = { some: { name: query.tag } };
+    }
+
+    if (query.author) {
+      whereClause.author = { username: query.author };
+    }
+
+    if (query.favorited) {
+      whereClause.favoritedBy = { some: { username: query.favorited } };
+    }
+
+    const [articles, articlesCount] = await Promise.all([
+      this.prisma.article.findMany({
+        where: whereClause,
+        skip: Number(query.offset) || 0,
+        take: Number(query.limit) || 20,
+        orderBy: { createdAt: 'desc' },
+        include: { author: true, tags: true, favoritedBy: true },
+      }),
+      this.prisma.article.count({ where: whereClause }),
+    ]);
+
+    let followingIds: number[] = [];
+    if (currentUser) {
+      followingIds =
+        (
+          await this.prisma.user.findUnique({
+            where: { id: currentUser.id },
+            select: { following: { select: { id: true } } },
+          })
+        )?.following.map((f) => f.id) ?? [];
+    }
+
+    const formattedArticles = await Promise.all(
+      articles.map((article) =>
+        this.buildArticleResponse(article, currentUser, followingIds),
+      ),
+    );
+
+    return {
+      articles: formattedArticles.map((a) => a.article),
+      articlesCount,
+    };
+  }
+
+  async getFeed(currentUser: User, query: QueryArticleDto) {
+    const followedUsers = await this.prisma.user.findUnique({
+      where: { id: currentUser.id },
+      select: { following: { select: { id: true } } },
+    });
+
+    const followedUserIds =
+      followedUsers?.following.map((user) => user.id) ?? [];
+
+    if (followedUserIds.length === 0) {
+      return { articles: [], articlesCount: 0 };
+    }
+
+    const [articles, articlesCount] = await Promise.all([
+      this.prisma.article.findMany({
+        where: { authorId: { in: followedUserIds } },
+        skip: Number(query.offset) ?? 0,
+        take: Number(query.limit) ?? 20,
+        orderBy: { createdAt: 'desc' },
+        include: { author: true, tags: true, favoritedBy: true },
+      }),
+      this.prisma.article.count({
+        where: { authorId: { in: followedUserIds } },
+      }),
+    ]);
+
+    const formattedArticles = await Promise.all(
+      articles.map((article) =>
+        this.buildArticleResponse(article, currentUser, followedUserIds),
+      ),
+    );
+
+    return {
+      articles: formattedArticles.map((a) => a.article),
+      articlesCount,
+    };
+  }
+
+  private async buildArticleResponse(
+    article: any,
+    currentUser?: User,
+    followingIds: number[] = [],
+  ) {
+    const tagList = article.tags.map((tag) => tag.name);
+    const favoritesCount = article.favoritedBy.length;
+
+    const favorited = currentUser
+      ? article.favoritedBy.some((user) => user.id === currentUser.id)
+      : false;
+
+    const authorFollowing = currentUser
+      ? followingIds.includes(article.authorId)
+      : false;
+
+    const formattedArticle = {
+      slug: article.slug,
+      title: article.title,
+      description: article.description,
+      body: article.body,
+      tagList,
+      createdAt: article.createdAt,
+      updatedAt: article.updatedAt,
+      favorited,
+      favoritesCount,
+      author: this.formatAuthor(article.author, authorFollowing),
+    };
+
+    return { article: formattedArticle };
+  }
+
+  private formatAuthor(author: User, following: boolean) {
+    const { password, ...safeAuthor } = author;
+    return {
+      username: safeAuthor.username,
+      bio: safeAuthor.bio,
+      image: safeAuthor.image,
+      following,
+    };
   }
 }
