@@ -11,6 +11,7 @@ import {
   Delete,
   NotFoundException,
   ForbiddenException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -26,6 +27,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { I18n, I18nContext } from 'nestjs-i18n';
+import { CreateCommentDto } from './dto/createComment.dto';
 
 @ApiTags('Articles')
 @Controller('api/articles')
@@ -122,6 +124,75 @@ export class ArticlesController {
     return {
       statusCode: HttpStatus.OK,
       message: 'Article deleted successfully',
+    };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add a comment to an article' })
+  @ApiResponse({ status: 201, description: 'Comment successfully added' })
+  @ApiParam({ name: 'slug', description: 'Slug of the article to comment on' })
+  @UseGuards(AuthGuard('jwt'))
+  @Post(':slug/comments')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        comment: { $ref: '#/components/schemas/CreateCommentDto' },
+      },
+    },
+  })
+  async addComment(
+    @GetUser('id') authorId: number,
+    @Param('slug') slug: string,
+    @Body('comment') createCommentDto: CreateCommentDto,
+    @I18n() i18n: I18nContext,
+  ) {
+    const comment = await this.articlesService.addComment(
+      authorId,
+      slug,
+      createCommentDto,
+      i18n,
+    );
+
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Comment added successfully',
+      data: { comment },
+    };
+  }
+
+  @ApiOperation({ summary: 'Get all comments for an article' })
+  @ApiResponse({ status: 200, description: 'Comments successfully retrieved' })
+  @ApiParam({ name: 'slug', description: 'Slug of the article' })
+  @Get(':slug/comments')
+  async getComments(@Param('slug') slug: string) {
+    const comments = await this.articlesService.getComments(slug);
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Comments retrieved successfully',
+      data: { comments },
+    };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a comment' })
+  @ApiResponse({ status: 204, description: 'Comment successfully deleted' })
+  @ApiParam({ name: 'slug', description: 'Slug of the article' })
+  @ApiParam({ name: 'id', description: 'ID of the comment to delete' })
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':slug/comments/:id')
+  async deleteComment(
+    @GetUser('id') authorId: number,
+    @Param('id', ParseIntPipe) commentId: number,
+    @I18n() i18n: I18nContext,
+  ) {
+    await this.articlesService.deleteComment(authorId, commentId, i18n);
+
+    return {
+      statusCode: HttpStatus.NO_CONTENT,
+      message: 'Comment deleted successfully',
     };
   }
 }
