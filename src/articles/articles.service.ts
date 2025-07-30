@@ -313,7 +313,7 @@ export class ArticlesService {
     };
   }
 
-  private async buildArticleResponse(
+  private buildArticleResponse(
     article: any,
     currentUser?: User,
     followingIds: number[] = [],
